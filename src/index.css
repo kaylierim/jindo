@@ -6,8 +6,12 @@
   --color-jindo-terracotta: #c67256;
   --color-jindo-cream: #eddfbc;
   --color-jindo-charcoal: #454346;
+
+  --font-heading: "la-mericana", serif;
+  --font-korean: "knps-bandali", sans-serif;
 }
 
 body {
   margin: 0;
+  font-family: "nunito", sans-serif;
 }

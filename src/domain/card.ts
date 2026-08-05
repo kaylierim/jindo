@@ -3,34 +3,54 @@ import { Rating as Grade } from 'ts-fsrs'
 
 export { Grade }
 
+export type ReviewGrade = Exclude<Grade, Grade.Manual>
+
+export type ReviewDirection = 'recognition' | 'production'
+
 export interface VocabCard {
   id: string
   korean: string
   english: string
   example: string
+  productionEnabled: boolean
 }
 
-export interface ScheduledCard extends VocabCard {
+export interface Reviewable {
+  cardId: string
+  direction: ReviewDirection
   fsrs: FsrsState
 }
 
 const scheduler = fsrs()
 
-export function createCard(korean: string, english: string, example: string): ScheduledCard {
+export function createCard(
+  korean: string,
+  english: string,
+  example: string,
+  productionEnabled = true,
+): VocabCard {
   return {
     id: crypto.randomUUID(),
     korean,
     english,
     example,
-    fsrs: createEmptyCard(new Date()),
+    productionEnabled,
   }
 }
 
-export function gradeReview(card: ScheduledCard, grade: Exclude<Grade, Grade.Manual>, now: Date = new Date()): ScheduledCard {
-  const { card: nextFsrsState } = scheduler.next(card.fsrs, now, grade)
-  return { ...card, fsrs: nextFsrsState }
+export function createReviewable(cardId: string, direction: ReviewDirection, now: Date = new Date()): Reviewable {
+  return {
+    cardId,
+    direction,
+    fsrs: createEmptyCard(now),
+  }
 }
 
-export function isDue(card: ScheduledCard, now: Date = new Date()): boolean {
-  return card.fsrs.due <= now
+export function gradeReview(reviewable: Reviewable, grade: ReviewGrade, now: Date = new Date()): Reviewable {
+  const { card: nextFsrsState } = scheduler.next(reviewable.fsrs, now, grade)
+  return { ...reviewable, fsrs: nextFsrsState }
+}
+
+export function isDue(reviewable: Reviewable, now: Date = new Date()): boolean {
+  return reviewable.fsrs.due <= now
 }

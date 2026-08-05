@@ -1,7 +1,15 @@
-import type { ScheduledCard } from '../domain/card'
+import type { Reviewable, ReviewDirection, VocabCard } from '../domain/card'
+
+export interface DueReview {
+  card: VocabCard
+  reviewable: Reviewable
+}
 
 export interface CardRepository {
-  getAll(): ScheduledCard[]
-  getDue(now?: Date): ScheduledCard[]
-  save(card: ScheduledCard): void
+  getAllCards(): VocabCard[]
+  saveCard(card: VocabCard): void
+  deleteCard(cardId: string): void
+  getReviewable(cardId: string, direction: ReviewDirection): Reviewable | undefined
+  saveReviewable(reviewable: Reviewable): void
+  getDueReviews(now?: Date): DueReview[]
 }
