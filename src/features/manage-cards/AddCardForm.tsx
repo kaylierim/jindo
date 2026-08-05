@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createCard, createReviewable } from "../../domain/card";
 import type { CardRepository } from "../../data/cardRepository";
 import { ExistingCardsList } from "./ExistingCardsList";
+import { Toast } from "../../components/Toast";
+
+const TOAST_DURATION_MS = 2000;
 
 interface AddCardFormProps {
   repository: CardRepository;
@@ -14,10 +17,25 @@ export function AddCardForm({ repository, onCardAdded }: AddCardFormProps) {
   const [example, setExample] = useState("");
   const [practiceProduction, setPracticeProduction] = useState(true);
   const [cardsVersion, setCardsVersion] = useState(0);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const card = createCard(korean.trim(), english.trim(), example.trim(), practiceProduction);
+    const card = createCard(
+      korean.trim(),
+      english.trim(),
+      example.trim(),
+      practiceProduction,
+    );
     repository.saveCard(card);
     repository.saveReviewable(createReviewable(card.id, "recognition"));
     if (practiceProduction) {
@@ -28,6 +46,13 @@ export function AddCardForm({ repository, onCardAdded }: AddCardFormProps) {
     setExample("");
     setPracticeProduction(true);
     setCardsVersion((version) => version + 1);
+    setShowToast(true);
+    if (toastTimeoutRef.current !== null) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setShowToast(false);
+    }, TOAST_DURATION_MS);
     onCardAdded();
   }
 
@@ -38,21 +63,21 @@ export function AddCardForm({ repository, onCardAdded }: AddCardFormProps) {
         className="flex w-full flex-col gap-3 rounded-2xl border border-jindo-blue/20 bg-white p-6 shadow-lg"
       >
         <label className="flex flex-col gap-1 text-left text-sm text-jindo-charcoal">
-          Korean word
-          <input
-            value={korean}
-            onChange={(event) => setKorean(event.target.value)}
-            required
-            className="rounded-lg border border-jindo-blue/20 px-3 py-2 font-korean text-base"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-left text-sm text-jindo-charcoal">
           English meaning
           <input
             value={english}
             onChange={(event) => setEnglish(event.target.value)}
             required
             className="rounded-lg border border-jindo-blue/20 px-3 py-2 text-base"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-left text-sm text-jindo-charcoal">
+          Korean word
+          <input
+            value={korean}
+            onChange={(event) => setKorean(event.target.value)}
+            required
+            className="rounded-lg border border-jindo-blue/20 px-3 py-2 font-korean text-base"
           />
         </label>
         <label className="flex flex-col gap-1 text-left text-sm text-jindo-charcoal">
@@ -84,6 +109,7 @@ export function AddCardForm({ repository, onCardAdded }: AddCardFormProps) {
         repository={repository}
         onChange={() => setCardsVersion((version) => version + 1)}
       />
+      <Toast message="Card added" visible={showToast} />
     </div>
   );
 }

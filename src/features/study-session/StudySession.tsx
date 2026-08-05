@@ -97,6 +97,7 @@ export function StudySession({ repository }: StudySessionProps) {
         }`}
       >
         <Flashcard
+          key={`${card.id}-${reviewable.direction}`}
           korean={card.korean}
           english={card.english}
           example={card.example}

@@ -68,7 +68,6 @@ function App() {
           repository={repository}
           onCardAdded={() => {
             setCardsVersion((version) => version + 1);
-            setView("study");
           }}
         />
       )}
