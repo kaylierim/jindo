@@ -1,21 +1,42 @@
+import { useState } from 'react'
 import type { SessionSegment } from './sessionPlan'
+import type { SessionTemplateRepository } from './sessionTemplateStore'
 
 interface SegmentBuilderProps {
   segments: SessionSegment[]
   onChange: (segments: SessionSegment[]) => void
   onStart: () => void
+  templateRepository: SessionTemplateRepository
+  onBack: () => void
 }
 
 function isValidSegment(segment: SessionSegment): boolean {
   return segment.label.trim().length > 0 && segment.durationSeconds > 0
 }
 
-export function SegmentBuilder({ segments, onChange, onStart }: SegmentBuilderProps) {
+export function SegmentBuilder({
+  segments,
+  onChange,
+  onStart,
+  templateRepository,
+  onBack,
+}: SegmentBuilderProps) {
+  const [templateName, setTemplateName] = useState('')
   const totalMinutes = segments.reduce(
     (sum, segment) => sum + segment.durationSeconds / 60,
     0,
   )
   const canStart = segments.length > 0 && segments.every(isValidSegment)
+  const canSave = templateName.trim().length > 0 && canStart
+
+  function handleSaveTemplate() {
+    templateRepository.save({
+      id: crypto.randomUUID(),
+      name: templateName.trim(),
+      segments,
+    })
+    setTemplateName('')
+  }
 
   function updateSegment(id: string, patch: Partial<SessionSegment>) {
     onChange(
@@ -42,7 +63,16 @@ export function SegmentBuilder({ segments, onChange, onStart }: SegmentBuilderPr
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-jindo-blue/20 bg-white p-6 shadow-lg">
-      <h2 className="font-heading text-lg font-medium text-jindo-charcoal">Plan your session</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-heading text-lg font-medium text-jindo-charcoal">Plan your session</h2>
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-xs font-medium text-jindo-blue underline"
+        >
+          Back
+        </button>
+      </div>
 
       <div className="flex flex-col gap-4">
         {segments.map((segment, index) => (
@@ -107,6 +137,23 @@ export function SegmentBuilder({ segments, onChange, onStart }: SegmentBuilderPr
       <p className="text-sm text-jindo-charcoal/70">
         Total planned time: {totalMinutes} min
       </p>
+
+      <div className="flex items-center gap-2 border-t border-jindo-blue/10 pt-3">
+        <input
+          value={templateName}
+          onChange={(event) => setTemplateName(event.target.value)}
+          placeholder="Name this session"
+          className="min-w-0 flex-1 rounded-lg border border-jindo-blue/20 px-3 py-2 text-base"
+        />
+        <button
+          type="button"
+          disabled={!canSave}
+          onClick={handleSaveTemplate}
+          className="shrink-0 rounded-full border border-jindo-blue px-4 py-2 text-sm font-medium text-jindo-blue disabled:border-jindo-blue/40 disabled:text-jindo-blue/40"
+        >
+          Save session
+        </button>
+      </div>
 
       <button
         type="button"

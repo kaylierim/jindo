@@ -52,7 +52,7 @@ export function SessionRunner({ state, onStateChange, onEditPlan }: SessionRunne
           onClick={onEditPlan}
           className="rounded-full bg-jindo-blue px-5 py-2 text-sm font-medium text-white"
         >
-          Back to builder
+          Back to sessions
         </button>
       </div>
     )
