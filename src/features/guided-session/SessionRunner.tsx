@@ -23,6 +23,7 @@ function formatTime(totalSeconds: number): string {
 
 export function SessionRunner({ state, onStateChange, onEditPlan }: SessionRunnerProps) {
   const stateRef = useRef(state)
+  const lastTickRef = useRef(0)
 
   useEffect(() => {
     stateRef.current = state
@@ -31,11 +32,33 @@ export function SessionRunner({ state, onStateChange, onEditPlan }: SessionRunne
   useEffect(() => {
     if (state.status !== 'running') return
 
+    lastTickRef.current = Date.now()
+
     const intervalId = setInterval(() => {
-      onStateChange(tick(stateRef.current))
+      const now = Date.now()
+      const elapsedSeconds = Math.round((now - lastTickRef.current) / 1000)
+      if (elapsedSeconds < 1) return
+      lastTickRef.current = now
+      onStateChange(tick(stateRef.current, elapsedSeconds))
     }, 1000)
 
-    return () => clearInterval(intervalId)
+    // Catch up immediately when the tab regains focus, rather than waiting for
+    // the next scheduled interval firing (browsers throttle/suspend timers on
+    // backgrounded tabs, so relying on interval firings alone loses real time).
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const now = Date.now()
+      const elapsedSeconds = Math.round((now - lastTickRef.current) / 1000)
+      if (elapsedSeconds < 1) return
+      lastTickRef.current = now
+      onStateChange(tick(stateRef.current, elapsedSeconds))
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
     // Only restart the interval when status actually changes (running/paused/complete),
     // not on every tick — stateRef.current keeps the callback reading fresh state instead.
   }, [state.status, onStateChange])

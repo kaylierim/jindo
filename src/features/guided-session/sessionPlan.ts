@@ -30,16 +30,22 @@ export function createSessionState(segments: SessionSegment[]): SessionState {
   }
 }
 
-export function tick(state: SessionState): SessionState {
-  if (state.status !== 'running') {
-    return state
+export function tick(state: SessionState, elapsedSeconds: number = 1): SessionState {
+  if (state.status !== 'running') return state
+
+  let remaining = elapsedSeconds
+  let current = state
+
+  while (remaining > 0) {
+    if (current.remainingSeconds > remaining) {
+      return { ...current, remainingSeconds: current.remainingSeconds - remaining }
+    }
+    remaining -= current.remainingSeconds
+    current = advance(current)
+    if (current.status !== 'running') return current
   }
 
-  if (state.remainingSeconds > 0) {
-    return { ...state, remainingSeconds: state.remainingSeconds - 1 }
-  }
-
-  return advance(state)
+  return current
 }
 
 export function advance(state: SessionState): SessionState {
