@@ -40,18 +40,18 @@ export function Flashcard({
       >
         <div className={faceClasses}>
           <p
-            className={`text-3xl font-medium text-jindo-charcoal ${frontIsKorean ? "font-korean" : ""}`}
+            className={`text-3xl font-medium text-jindo-charcoal ${frontIsKorean ? "font-korean text-4xl" : ""}`}
           >
             {front}
           </p>
         </div>
         <div className={`${faceClasses} [transform:rotateY(180deg)]`}>
           <p
-            className={`text-3xl text-jindo-blue ${backIsKorean ? "font-korean" : ""}`}
+            className={`text-3xl text-jindo-blue ${backIsKorean ? "font-korean text-4xl" : ""}`}
           >
             {back}
           </p>
-          <p className="font-korean text-xl text-jindo-charcoal/70 italic">
+          <p className="font-korean text-2xl text-jindo-charcoal/70 italic">
             {example}
           </p>
         </div>

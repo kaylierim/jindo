@@ -1,26 +1,51 @@
-import { useEffect, useRef, useState } from 'react'
-import { Grade, gradeReview, type ReviewGrade } from '../../domain/card'
-import type { CardRepository, DueReview } from '../../data/cardRepository'
-import { Flashcard } from '../../components/Flashcard'
+import { Fragment, useEffect, useRef, useState } from "react";
+import { Grade, gradeReview, type ReviewGrade } from "../../domain/card";
+import type { CardRepository, DueReview } from "../../data/cardRepository";
+import { Flashcard } from "../../components/Flashcard";
 
-const EXIT_TRANSITION_MS = 300
+const EXIT_TRANSITION_MS = 300;
 
 interface StudySessionProps {
-  repository: CardRepository
+  repository: CardRepository;
 }
 
-const GRADE_OPTIONS: { grade: ReviewGrade; label: string; className: string }[] = [
-  { grade: Grade.Again, label: 'Again', className: 'bg-jindo-terracotta' },
-  { grade: Grade.Hard, label: 'Hard', className: 'bg-jindo-charcoal' },
-  { grade: Grade.Good, label: 'Good', className: 'bg-jindo-blue' },
-  { grade: Grade.Easy, label: 'Easy', className: 'bg-jindo-sage' },
-]
+const GRADE_OPTIONS: {
+  grade: ReviewGrade;
+  label: string;
+  className: string;
+  explanation: string;
+}[] = [
+  {
+    grade: Grade.Again,
+    label: "Again",
+    className: "bg-jindo-terracotta",
+    explanation: "didn't recall it",
+  },
+  {
+    grade: Grade.Hard,
+    label: "Hard",
+    className: "bg-jindo-charcoal",
+    explanation: "recalled, but effortful",
+  },
+  {
+    grade: Grade.Good,
+    label: "Good",
+    className: "bg-jindo-blue",
+    explanation: "recalled at expected effort",
+  },
+  {
+    grade: Grade.Easy,
+    label: "Easy",
+    className: "bg-jindo-sage",
+    explanation: "instant, no effort",
+  },
+];
 
 function shuffle<T>(items: T[], avoidFirst?: T): T[] {
-  const shuffled = [...items]
+  const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   // A plain shuffle can coincidentally leave the same card on top, which looks
   // like nothing happened. Guarantee the front card differs from whatever was
@@ -28,35 +53,44 @@ function shuffle<T>(items: T[], avoidFirst?: T): T[] {
   // clicks can get batched into one React update, so comparing against `items`
   // (an intermediate, unpainted state) wouldn't catch a net no-op across the batch.
   if (shuffled.length > 1 && shuffled[0] === avoidFirst) {
-    const swapWith = 1 + Math.floor(Math.random() * (shuffled.length - 1))
-    ;[shuffled[0], shuffled[swapWith]] = [shuffled[swapWith], shuffled[0]]
+    const swapWith = 1 + Math.floor(Math.random() * (shuffled.length - 1));
+    [shuffled[0], shuffled[swapWith]] = [shuffled[swapWith], shuffled[0]];
   }
-  return shuffled
+  return shuffled;
 }
 
 export function StudySession({ repository }: StudySessionProps) {
-  const [queue, setQueue] = useState<DueReview[]>(() => repository.getDueReviews())
-  const [isFlipped, setIsFlipped] = useState(false)
-  const [isExiting, setIsExiting] = useState(false)
-  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isGradingRef = useRef(false)
+  const [queue, setQueue] = useState<DueReview[]>(() =>
+    repository.getDueReviews(),
+  );
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [showExplanations, setShowExplanations] = useState(false);
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isGradingRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (exitTimeoutRef.current !== null) {
-        clearTimeout(exitTimeoutRef.current)
+        clearTimeout(exitTimeoutRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
-  const currentReview = queue[0]
+  // Collapse the disclosure whenever the grade buttons leave view, so it
+  // doesn't carry over already-expanded into the next card's flip.
+  useEffect(() => {
+    if (!isFlipped) setShowExplanations(false);
+  }, [isFlipped]);
+
+  const currentReview = queue[0];
 
   function handleGrade(grade: ReviewGrade) {
-    if (!currentReview || isGradingRef.current) return
-    isGradingRef.current = true
-    const gradedReview = currentReview
-    repository.saveReviewable(gradeReview(gradedReview.reviewable, grade))
-    setIsExiting(true)
+    if (!currentReview || isGradingRef.current) return;
+    isGradingRef.current = true;
+    const gradedReview = currentReview;
+    repository.saveReviewable(gradeReview(gradedReview.reviewable, grade));
+    setIsExiting(true);
     exitTimeoutRef.current = setTimeout(() => {
       setQueue((prev) =>
         prev.filter(
@@ -66,30 +100,34 @@ export function StudySession({ repository }: StudySessionProps) {
               review.reviewable.direction === gradedReview.reviewable.direction
             ),
         ),
-      )
-      setIsFlipped(false)
-      setIsExiting(false)
-      isGradingRef.current = false
-    }, EXIT_TRANSITION_MS)
+      );
+      setIsFlipped(false);
+      setIsExiting(false);
+      isGradingRef.current = false;
+    }, EXIT_TRANSITION_MS);
   }
 
   function handleShuffle() {
-    if (isExiting) return
-    const displayedFirst = currentReview
-    setQueue((prev) => shuffle(prev, displayedFirst))
-    setIsFlipped(false)
+    if (isExiting) return;
+    const displayedFirst = currentReview;
+    setQueue((prev) => shuffle(prev, displayedFirst));
+    setIsFlipped(false);
   }
 
   if (!currentReview) {
     return (
       <div className="flex min-h-64 w-full max-w-sm flex-col items-center justify-center gap-2 rounded-2xl bg-white p-8 text-center shadow-lg">
-        <h2 className="font-heading text-lg font-medium text-jindo-charcoal">All caught up!</h2>
-        <p className="text-sm text-jindo-charcoal/70">No cards due for review right now.</p>
+        <h2 className="font-heading text-lg font-medium text-jindo-charcoal">
+          All caught up!
+        </h2>
+        <p className="text-sm text-jindo-charcoal/70">
+          No cards due for review right now.
+        </p>
       </div>
-    )
+    );
   }
 
-  const { card, reviewable } = currentReview
+  const { card, reviewable } = currentReview;
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -103,7 +141,7 @@ export function StudySession({ repository }: StudySessionProps) {
       </button>
       <div
         className={`transition-all duration-300 ease-in-out ${
-          isExiting ? 'translate-x-32 opacity-0' : 'translate-x-0 opacity-100'
+          isExiting ? "translate-x-32 opacity-0" : "translate-x-0 opacity-100"
         }`}
       >
         <Flashcard
@@ -117,20 +155,50 @@ export function StudySession({ repository }: StudySessionProps) {
         />
       </div>
       {isFlipped && (
-        <div className="flex gap-3">
-          {GRADE_OPTIONS.map(({ grade, label, className }) => (
-            <button
-              key={label}
-              type="button"
-              disabled={isExiting}
-              onClick={() => handleGrade(grade)}
-              className={`rounded-full px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-3">
+            {GRADE_OPTIONS.map(({ grade, label, className }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={isExiting}
+                onClick={() => handleGrade(grade)}
+                className={`rounded-full px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowExplanations((shown) => !shown)}
+            aria-expanded={showExplanations}
+            aria-controls="grade-explanations"
+            className="text-xs text-jindo-blue/60 underline-offset-2 hover:underline"
+          >
+            What do these mean?
+          </button>
+          {showExplanations && (
+            <div
+              id="grade-explanations"
+              className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-1 rounded-2xl border border-jindo-blue/20 bg-white px-4 py-3 text-xs text-jindo-charcoal/70"
             >
-              {label}
-            </button>
-          ))}
+              {GRADE_OPTIONS.map(({ label, className, explanation }) => (
+                <Fragment key={label}>
+                  <span className="flex items-center gap-1.5 font-medium text-jindo-charcoal">
+                    <span
+                      className={`h-2 w-2 rounded-full ${className}`}
+                      aria-hidden="true"
+                    />
+                    {label}
+                  </span>
+                  <span>{explanation}</span>
+                </Fragment>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
-  )
+  );
 }
