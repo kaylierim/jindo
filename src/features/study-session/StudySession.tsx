@@ -16,11 +16,20 @@ const GRADE_OPTIONS: { grade: ReviewGrade; label: string; className: string }[] 
   { grade: Grade.Easy, label: 'Easy', className: 'bg-jindo-sage' },
 ]
 
-function shuffle<T>(items: T[]): T[] {
+function shuffle<T>(items: T[], avoidFirst?: T): T[] {
   const shuffled = [...items]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  // A plain shuffle can coincidentally leave the same card on top, which looks
+  // like nothing happened. Guarantee the front card differs from whatever was
+  // last actually displayed (not just this call's own input) — several rapid
+  // clicks can get batched into one React update, so comparing against `items`
+  // (an intermediate, unpainted state) wouldn't catch a net no-op across the batch.
+  if (shuffled.length > 1 && shuffled[0] === avoidFirst) {
+    const swapWith = 1 + Math.floor(Math.random() * (shuffled.length - 1))
+    ;[shuffled[0], shuffled[swapWith]] = [shuffled[swapWith], shuffled[0]]
   }
   return shuffled
 }
@@ -66,7 +75,8 @@ export function StudySession({ repository }: StudySessionProps) {
 
   function handleShuffle() {
     if (isExiting) return
-    setQueue((prev) => shuffle(prev))
+    const displayedFirst = currentReview
+    setQueue((prev) => shuffle(prev, displayedFirst))
     setIsFlipped(false)
   }
 
