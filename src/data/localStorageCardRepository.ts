@@ -96,4 +96,8 @@ export class LocalStorageCardRepository implements CardRepository {
 
     return dueReviews
   }
+
+  getAllReviewables(): Reviewable[] {
+    return readReviewables()
+  }
 }

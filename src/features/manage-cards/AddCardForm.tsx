@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createCard, createReviewable } from "../../domain/card";
 import type { CardRepository } from "../../data/cardRepository";
 import { ExistingCardsList } from "./ExistingCardsList";
+import { ProgressStats } from "./ProgressStats";
 import { Toast } from "../../components/Toast";
 
 const TOAST_DURATION_MS = 2000;
@@ -104,6 +105,7 @@ export function AddCardForm({ repository, onCardAdded }: AddCardFormProps) {
           Add card
         </button>
       </form>
+      <ProgressStats repository={repository} refreshToken={cardsVersion} />
       <ExistingCardsList
         key={cardsVersion}
         repository={repository}

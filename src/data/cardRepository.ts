@@ -12,4 +12,5 @@ export interface CardRepository {
   getReviewable(cardId: string, direction: ReviewDirection): Reviewable | undefined
   saveReviewable(reviewable: Reviewable): void
   getDueReviews(now?: Date): DueReview[]
+  getAllReviewables(): Reviewable[]
 }

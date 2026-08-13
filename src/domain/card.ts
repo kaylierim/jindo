@@ -1,4 +1,4 @@
-import { createEmptyCard, fsrs, type Card as FsrsState } from 'ts-fsrs'
+import { createEmptyCard, fsrs, State, type Card as FsrsState } from 'ts-fsrs'
 import { Rating as Grade } from 'ts-fsrs'
 
 export { Grade }
@@ -53,4 +53,18 @@ export function gradeReview(reviewable: Reviewable, grade: ReviewGrade, now: Dat
 
 export function isDue(reviewable: Reviewable, now: Date = new Date()): boolean {
   return reviewable.fsrs.due <= now
+}
+
+export type ProgressState = 'new' | 'learning' | 'review'
+
+export function getProgressState(reviewable: Reviewable): ProgressState {
+  switch (reviewable.fsrs.state) {
+    case State.New:
+      return 'new'
+    case State.Review:
+      return 'review'
+    case State.Learning:
+    case State.Relearning:
+      return 'learning'
+  }
 }
