@@ -68,3 +68,12 @@ export function getProgressState(reviewable: Reviewable): ProgressState {
       return 'learning'
   }
 }
+
+// 21 days matches the conventional "mature card" threshold used across
+// spaced-repetition tools (e.g. Anki), so it's a well-understood benchmark
+// rather than an app-specific guess.
+export const MATURE_STABILITY_DAYS = 21
+
+export function isMature(reviewable: Reviewable): boolean {
+  return reviewable.fsrs.stability >= MATURE_STABILITY_DAYS
+}
